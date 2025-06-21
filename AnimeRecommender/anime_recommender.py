@@ -1,54 +1,60 @@
 """
-This Streamlit app provides an anime recommendation system using real-time data
-from MyAnimeList (via the Jikan API). It leverages cached anime metadata to
-compute content-based similarity using TF-IDF and cosine similarity on combined
-synopsis and genres text. Users input an anime title, and the app suggests similar
-anime based on textual similarity, enhanced by fuzzy matching for flexible input.
+Anime Recommendation System (Machine Learning Version)
+
+This Streamlit app provides an interactive anime recommendation system using real-time data
+from MyAnimeList (via the Jikan API). It retrieves top anime data and caches it locally. 
+For recommendations, it uses a pre-trained Sentence Transformer model (all-MiniLM-L6-v2) 
+to generate semantic embeddings based on combined synopsis and genre text for each anime. 
+Cosine similarity is computed on these embeddings to measure content-based similarity.
+
+The app features fuzzy string matching to handle user input flexibly, allowing approximate
+title matches. Once a title is selected, the app recommends the most semantically similar 
+anime based on their descriptions and genres. The UI is built using Streamlit for easy 
+interaction and visualization of recommendations.
 """
 import streamlit as st
+import numpy as np
 from local_cachingJSON import get_top_animes, get_cache_last_updated  # import caching function
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from fuzzywuzzy import process
 
 #-------------------------------------
-# similarity matrix
+# similarity matrix (ML version)
 #-------------------------------------
-# Constructs a similarity matrix for the anime dataset by combining the synopsis
-# and genres of each anime into a single string. These combined texts are converted
-# into TF-IDF vectors to weight terms by importance, then cosine similarity is
-# calculated to quantify similarity between every pair of anime.
+# Uses pre-trained sentence transformer to encode combined synopsis and genres
+# into semantic embeddings, and computes cosine similarity between all anime.
 #-------------------------------------
-@st.cache_data(show_spinner="Building similarity matrix...")
+@st.cache_data(show_spinner="Building semantic similarity matrix...")
 def build_similarity_matrix(df):
     combined_features = df['synopsis'] + " " + df['genres']
-    tfidf = TfidfVectorizer(stop_words = 'english') 
-    tfidf_matrix = tfidf.fit_transform(combined_features)
-    cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
+    model = SentenceTransformer('all-MiniLM-L6-v2')  
+    embeddings = model.encode(combined_features.tolist(), convert_to_numpy=True)
+    cosine_sim = cosine_similarity(embeddings, embeddings)
     return cosine_sim
 
 #-------------------------------------
 # recommend
 #-------------------------------------
-# Given a user-selected anime title, this function finds the anime's index and
-# retrieves its similarity scores to all other anime. It sorts these scores in
-# descending order, excludes the anime itself, and returns the top N most similar
-# anime as recommendations.
+# Given a selected anime title (already fuzzy-matched by the user interface),
+# this function locates the corresponding anime in the dataset by checking
+# if the title appears in any of the title-related fields (original title,
+# English title, Japanese title, or synonyms). Once the anime is located,
+# it retrieves the precomputed similarity scores from the similarity matrix,
+# sorts them in descending order (highest similarity first), excludes the anime
+# itself, and returns the top N most similar anime as recommendations.
 #-------------------------------------
 def recommend(title, df, similarity_matrix, top_n=5):
-    match_row = df[
-        (df['title'] == title) | 
-        (df['title_english'] == title) | 
-        (df['title_japanese'] == title)
-    ]
+    idx = df.apply(
+        lambda row: title in str(row['title']) 
+                    or title in str(row['title_english']) 
+                    or title in str(row['title_japanese']) 
+                    or title in str(row['title_synonyms']), axis=1
+    ).idxmax()
 
-    if match_row.empty:
-        raise ValueError(f"No anime found matching title '{title}'.")
-    
-    idx = match_row.index[0]
     sim_scores = list(enumerate(similarity_matrix[idx]))
     sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
-    sim_scores = sim_scores[1:top_n + 1]  # exclude itself
+    sim_scores = sim_scores[1:top_n + 1]
     recommendations = df.iloc[[i[0] for i in sim_scores]]
     return recommendations
 
