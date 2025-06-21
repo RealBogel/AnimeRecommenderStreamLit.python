@@ -72,7 +72,7 @@ st.title("🎌 Anime Recommendation System")
 st.write("Using real-time data from MyAnimeList via Jikan API")
 
 # Load data and build similarity matrix
-df = get_top_animes(pages = 20)
+df = get_top_animes(pages = 40)
 
 last_updated = get_cache_last_updated()
 if last_updated:
