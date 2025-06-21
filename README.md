@@ -1,31 +1,31 @@
 # Anime Recommender
-This Python Streamlit app builds a content-based anime recommendation system using real-time data fetched from the MyAnimeList API via Jikan. It utilizes TF-IDF vectorization and cosine similarity to recommend anime based on synopsis and genres, enhanced by fuzzy matching for flexible user input.
+This project is a content-based anime recommendation system that uses real-time data from MyAnimeList (via the Jikan API) combined with natural language processing (NLP) techniques to suggest similar anime based on synopsis and genres.
 
-Objectives:
-- Practice building interactive web apps with Streamlit
+The system is fully interactive using Streamlit, allowing users to type any anime name (with fuzzy matching support) and receive high-quality recommendations based on semantic similarity of anime descriptions.
 
-- Implement content-based recommendation algorithms using natural language processing
+## Features
+- Real-time anime data from MyAnimeList using the Jikan API
 
-- Use TF-IDF and cosine similarity to compute item similarity
+- Caching system to avoid redundant API calls and speed up processing
 
-- Apply fuzzy string matching to improve user experience
+- Semantic similarity using Sentence Transformers (pre-trained language model)
 
-- Manage API data caching to optimize performance and reduce redundant requests
+- Cosine similarity used for recommendation scoring
 
-- Present data in a clean, user-friendly interface with images and descriptive text
+- Fuzzy matching to handle approximate or partial user input
 
-Breakdown:
-- Fetch and cache top anime data from Jikan API with local JSON storage
+- Interactive Streamlit interface with anime posters, genres, and synopses
 
-- Build a TF-IDF similarity matrix on combined synopsis and genre text
+## Machine Learning Techniques Used
+### Natural Language Processing (NLP):
+- Anime descriptions and genres are combined into text representations.
 
-- Develop a recommendation function that retrieves the most similar anime given a title
+### Sentence Embeddings:
+- The sentence-transformers library (all-MiniLM-L6-v2 model) generates dense vector embeddings that capture semantic meaning of the anime content.
 
-- Implement fuzzy matching to handle flexible user inputs and suggest closest matches
+### Cosine Similarity:
+- Similarity between embeddings is calculated using cosine similarity, allowing the system to recommend anime with the most similar content.
 
-- Create a Streamlit UI with input box, selection dropdown, and recommendation display
-
-- Display recommended anime with title, English title, image, genres, and synopsis
-
-- Provide cache freshness indicator for transparency on data recency
+### Fuzzy String Matching:
+- The fuzzywuzzy library helps match user input with available anime titles, handling typos, synonyms, and different title formats.
 
